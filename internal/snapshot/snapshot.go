@@ -4,6 +4,7 @@
 package snapshot
 
 import (
+	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -23,6 +24,7 @@ type Snapshot struct {
 	AuthorizedKeys map[string][]string `json:"authorized_keys"` // user -> authorized_keys lines
 	ListeningPorts []string            `json:"listening_ports"` // local ports from `ss -tulnp`
 	CronEntries    map[string][]string `json:"cron_entries"`    // user -> crontab lines
+	RootProcesses  []string            `json:"root_processes"`  // distinct command names running as root
 }
 
 // Capture builds a fresh Snapshot from current system state.
@@ -60,6 +62,7 @@ func Capture() Snapshot {
 	}
 
 	s.ListeningPorts = captureListeningPorts()
+	s.RootProcesses = captureRootProcesses()
 
 	return s
 }
@@ -120,4 +123,56 @@ func captureListeningPorts() []string {
 	}
 	sort.Strings(ports)
 	return ports
+}
+
+// captureRootProcesses returns the distinct command names (not PIDs, which
+// churn constantly and would make every snapshot look "new") of processes
+// currently running as root. Reads /proc directly instead of shelling out
+// to `ps`, whose column layout varies across distros/versions.
+func captureRootProcesses() []string {
+	entries, err := os.ReadDir("/proc")
+	if err != nil {
+		return nil
+	}
+
+	seen := map[string]bool{}
+	var names []string
+	for _, e := range entries {
+		pid := e.Name()
+		if _, err := strconv.Atoi(pid); err != nil {
+			continue // not a PID directory (e.g. /proc/net, /proc/self)
+		}
+
+		statusLines, ok := system.ReadFileLines(filepath.Join("/proc", pid, "status"))
+		if !ok || !isRootProcess(statusLines) {
+			continue
+		}
+
+		commLines, ok := system.ReadFileLines(filepath.Join("/proc", pid, "comm"))
+		if !ok || len(commLines) == 0 {
+			continue
+		}
+
+		name := commLines[0]
+		if !seen[name] {
+			seen[name] = true
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	return names
+}
+
+// isRootProcess parses the "Uid:" line of /proc/<pid>/status. The four
+// fields are real, effective, saved, and filesystem UID; a process is
+// treated as root only if the effective UID (the second field) is 0.
+func isRootProcess(statusLines []string) bool {
+	for _, line := range statusLines {
+		if !strings.HasPrefix(line, "Uid:") {
+			continue
+		}
+		fields := strings.Fields(line)
+		return len(fields) >= 3 && fields[2] == "0"
+	}
+	return false
 }

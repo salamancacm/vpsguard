@@ -95,7 +95,8 @@ Every config file change is backed up before it's written
 
 `monitor` saves a snapshot of server state on every run and compares it
 against the previous one, reporting suspicious changes (new user, new SSH
-key, new port, sudoers changes, new cron entry).
+key, new port, sudoers changes, new cron entry, new process running as
+root).
 
 ```bash
 sudo vpsguard monitor
