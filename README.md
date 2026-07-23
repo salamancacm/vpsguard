@@ -121,7 +121,7 @@ Snapshots are stored at `/var/lib/vpsguard/snapshot.json` and the cron-driven
 | `sshkeys` | permissions on `~/.ssh` and `authorized_keys`, number of trusted keys |
 | `cron` | user crontabs and `/etc/cron.*` (informational) |
 | `updates` | automatic security updates active |
-| `network` | listening TCP/UDP ports, flags non-standard ones |
+| `network` | listening TCP/UDP ports; flags non-standard ones, and CRITs on database ports (postgres/mysql/redis/mongo/elasticsearch) bound to all interfaces |
 
 ## Requirements
 
