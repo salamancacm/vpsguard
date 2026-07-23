@@ -65,6 +65,15 @@ func Diff(old, cur Snapshot) []report.Finding {
 			"this can also be a normal package upgrade or service restart — verify it's expected", false))
 	}
 
+	for path, curHash := range cur.BinaryHashes {
+		oldHash, existed := old.BinaryHashes[path]
+		if existed && oldHash != curHash {
+			findings = append(findings, report.NewFinding(check, report.CRIT,
+				"critical binary changed: "+path,
+				"this can also be a normal package update — verify with your package manager's log (e.g. 'apt changelog', 'dpkg -l') before assuming compromise", false))
+		}
+	}
+
 	return findings
 }
 

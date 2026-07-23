@@ -4,6 +4,9 @@
 package snapshot
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -13,6 +16,17 @@ import (
 
 	"github.com/salamancacm/vpsguard/internal/system"
 )
+
+// watchedBinaries is a deliberately small, fixed list of high-value targets
+// for rootkit/backdoor-style tampering. This is not a general-purpose
+// integrity monitor (that's what AIDE/Tripwire are for) — it only watches
+// paths where a silent swap is both plausible and severe.
+var watchedBinaries = []string{
+	"/usr/sbin/sshd",
+	"/usr/bin/sudo",
+	"/bin/su",
+	"/usr/bin/ssh",
+}
 
 // Snapshot is a serializable picture of state that can change when a server
 // is compromised: accounts, trusted SSH keys, cron jobs, open ports.
@@ -25,6 +39,7 @@ type Snapshot struct {
 	ListeningPorts []string            `json:"listening_ports"` // local ports from `ss -tulnp`
 	CronEntries    map[string][]string `json:"cron_entries"`    // user -> crontab lines
 	RootProcesses  []string            `json:"root_processes"`  // distinct command names running as root
+	BinaryHashes   map[string]string   `json:"binary_hashes"`   // path -> sha256, for watchedBinaries + vpsguard itself
 }
 
 // Capture builds a fresh Snapshot from current system state.
@@ -63,6 +78,7 @@ func Capture() Snapshot {
 
 	s.ListeningPorts = captureListeningPorts()
 	s.RootProcesses = captureRootProcesses()
+	s.BinaryHashes = captureBinaryHashes()
 
 	return s
 }
@@ -175,4 +191,39 @@ func isRootProcess(statusLines []string) bool {
 		return len(fields) >= 3 && fields[2] == "0"
 	}
 	return false
+}
+
+// captureBinaryHashes computes a SHA-256 for each path in watchedBinaries
+// that exists, plus vpsguard's own executable, so a silent swap of any of
+// them shows up as a diff on the next `monitor` run. Missing paths (e.g.
+// no sshd installed) are simply omitted, not an error.
+func captureBinaryHashes() map[string]string {
+	hashes := map[string]string{}
+
+	paths := make([]string, len(watchedBinaries))
+	copy(paths, watchedBinaries)
+	if exe, err := os.Executable(); err == nil {
+		paths = append(paths, exe)
+	}
+
+	for _, path := range paths {
+		if hash, ok := sha256File(path); ok {
+			hashes[path] = hash
+		}
+	}
+	return hashes
+}
+
+func sha256File(path string) (string, bool) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", false
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", false
+	}
+	return hex.EncodeToString(h.Sum(nil)), true
 }
