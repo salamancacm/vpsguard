@@ -15,9 +15,14 @@ var (
 	jsonOutput bool
 )
 
+// Version is set at build time via -ldflags "-X .../cmd.Version=vX.Y.Z".
+// Left as "dev" for local builds.
+var Version = "dev"
+
 var rootCmd = &cobra.Command{
 	Use:           "vpsguard",
 	Short:         "Security audit, hardening, and monitoring for Linux VPS",
+	Version:       Version,
 	SilenceUsage:  true,
 	SilenceErrors: false,
 }

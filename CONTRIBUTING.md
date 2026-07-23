@@ -73,6 +73,20 @@ Remediations must be **idempotent** (safe to run repeatedly) and must
 **back up** any file they modify via `internal/harden.BackupFile` before
 writing to it.
 
+## Cutting a release
+
+Releases are built and published automatically by
+`.github/workflows/release.yml` whenever a `v*` tag is pushed:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+This builds `linux/amd64` and `linux/arm64` binaries with the version baked
+in (`vpsguard --version`), generates checksums, and publishes them as
+GitHub release assets.
+
 ## Pull requests
 
 - Keep PRs focused on one change.
