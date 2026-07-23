@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/salamancacm/vpsguard/internal/report"
 	"github.com/salamancacm/vpsguard/internal/system"
 	"github.com/spf13/cobra"
 )
@@ -25,6 +26,15 @@ var rootCmd = &cobra.Command{
 	Version:       Version,
 	SilenceUsage:  true,
 	SilenceErrors: false,
+	// Only fires on bare `vpsguard` with no subcommand — cobra hands control
+	// to the subcommand's own RunE otherwise, so this never runs for
+	// `vpsguard audit`, `--json`, etc.
+	Run: func(cmd *cobra.Command, args []string) {
+		if report.Interactive() {
+			report.PrintBanner(os.Stdout, Version)
+		}
+		cmd.Help()
+	},
 }
 
 // Execute runs the CLI. Called from main.go.

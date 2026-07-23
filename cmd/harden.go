@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/salamancacm/vpsguard/internal/harden"
+	"github.com/salamancacm/vpsguard/internal/report"
 	"github.com/salamancacm/vpsguard/internal/system"
 	"github.com/spf13/cobra"
 )
@@ -46,7 +47,11 @@ var hardenCmd = &cobra.Command{
 				}
 			}
 
-			fmt.Printf("== %s ==\n", name)
+			if report.Interactive() {
+				report.PrintCheckHeader(os.Stdout, name)
+			} else {
+				fmt.Printf("== %s ==\n", name)
+			}
 			applied, err := fn(hardenDryRun)
 			for _, line := range applied {
 				fmt.Println("  " + line)
