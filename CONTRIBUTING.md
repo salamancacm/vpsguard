@@ -1,0 +1,82 @@
+# Contributing to vpsguard
+
+Thanks for considering a contribution. Because this tool modifies live
+server security configuration, changes here get a bit more scrutiny than a
+typical CLI project — that's a feature, not a bureaucratic hurdle.
+
+## Ground rules
+
+- Be respectful and constructive. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+- Discuss non-trivial changes in an issue before opening a large PR, so we
+  don't waste your time on an approach that won't land.
+- Never report a security vulnerability as a public issue — see
+  [SECURITY.md](SECURITY.md).
+
+## Development setup
+
+Requires [Go 1.22+](https://go.dev/dl/).
+
+```bash
+git clone https://github.com/salamancacm/vpsguard.git
+cd vpsguard
+go build -o vpsguard .
+```
+
+Format and vet before committing:
+
+```bash
+gofmt -l .        # should print nothing
+go vet ./...
+```
+
+## Testing changes
+
+vpsguard shells out to real system tools (`ufw`, `fail2ban-client`,
+`systemctl`, `ss`, `crontab`, ...) and reads/writes files like
+`/etc/ssh/sshd_config`. **Never run `harden` against your own machine while
+developing** — use a disposable Linux container or VM instead:
+
+```bash
+docker run -d --name vpsguard-dev --privileged ubuntu:22.04 sleep infinity
+docker exec vpsguard-dev bash -c "apt-get update -qq && apt-get install -y -qq \
+  openssh-server ufw fail2ban unattended-upgrades cron iproute2 sudo"
+
+GOOS=linux GOARCH=amd64 go build -o vpsguard-linux-amd64 .
+docker cp vpsguard-linux-amd64 vpsguard-dev:/usr/local/bin/vpsguard
+docker exec vpsguard-dev vpsguard audit
+docker exec vpsguard-dev vpsguard harden --dry-run
+
+docker rm -f vpsguard-dev   # clean up when done
+```
+
+Note: plain Docker containers don't run systemd, so `systemctl`-dependent
+steps (like enabling the fail2ban service) will fail there even when the
+code is correct — that's an environment limitation, not a bug. For full
+end-to-end verification, use a real VM (e.g. via Vagrant or a cloud
+throwaway instance).
+
+## Adding a new audit check
+
+1. Add `internal/checks/<name>.go` with a `func <Name>() []report.Finding`
+   that returns one `report.Finding` per condition it evaluates (don't
+   bundle unrelated conditions into a single Finding).
+2. Register it in `internal/checks/registry.go` (`All` map and `Order`
+   slice).
+3. If the issue has a safe, well-understood fix, add a matching
+   `internal/harden/<name>.go` with `func <Name>(dryRun bool) ([]string, error)`
+   and register it in `internal/harden/registry.go`. If there's no safe
+   automatic fix (it requires human judgement), leave it audit-only — see
+   how `users`, `cron`, and `network` are handled.
+4. Update the check table in `README.md`.
+
+Remediations must be **idempotent** (safe to run repeatedly) and must
+**back up** any file they modify via `internal/harden.BackupFile` before
+writing to it.
+
+## Pull requests
+
+- Keep PRs focused on one change.
+- Explain *why* the change is needed, not just what it does.
+- Make sure `gofmt -l .` and `go vet ./...` are clean.
+- If you touched a check or remediation, mention how you tested it (ideally
+  against a real container/VM, per above).
