@@ -64,7 +64,7 @@ sudo vpsguard audit --check=ssh,firewall
 ```
 
 Available checks: `ssh`, `firewall`, `fail2ban`, `users`, `sshkeys`,
-`cron`, `updates`, `network`.
+`cron`, `updates`, `network`, `docker`.
 
 ### Hardening
 
@@ -88,8 +88,8 @@ sudo vpsguard harden --yes
 
 Every config file change is backed up before it's written
 (`file.bak.<timestamp>`). Checks with automatic remediation: `ssh`,
-`firewall`, `fail2ban`, `sshkeys`, `updates`. `users`, `cron`, and `network`
-are audit-only — they require human judgement.
+`firewall`, `fail2ban`, `sshkeys`, `updates`. `users`, `cron`, `network`,
+and `docker` are audit-only — they require human judgement.
 
 ### Continuous monitoring
 
@@ -122,6 +122,7 @@ Snapshots are stored at `/var/lib/vpsguard/snapshot.json` and the cron-driven
 | `cron` | user crontabs and `/etc/cron.*` (informational) |
 | `updates` | automatic security updates active |
 | `network` | listening TCP/UDP ports; flags non-standard ones, and CRITs on database ports (postgres/mysql/redis/mongo/elasticsearch) bound to all interfaces |
+| `docker` | Docker socket permissions, and an unauthenticated TCP daemon listener |
 
 ## Requirements
 
