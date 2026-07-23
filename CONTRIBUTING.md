@@ -94,3 +94,26 @@ GitHub release assets.
 - Make sure `gofmt -l .` and `go vet ./...` are clean.
 - If you touched a check or remediation, mention how you tested it (ideally
   against a real container/VM, per above).
+
+### Branch naming
+
+Fork the repo and branch off `main` using `<type>/<short-description>`,
+kebab-case, no issue numbers needed:
+
+| Type | Use for | Example |
+|---|---|---|
+| `feat/` | a new check, remediation, or CLI capability | `feat/nftables-firewall-check` |
+| `fix/` | a bug fix | `fix/cron-empty-crontab-panic` |
+| `docs/` | README/CONTRIBUTING/comments only | `docs/clarify-dry-run-flag` |
+| `chore/` | tooling, CI, dependency bumps | `chore/bump-cobra` |
+
+This isn't strictly enforced, but it makes the PR list scannable at a
+glance and matches the branch prefixes used in this project's own history.
+
+### Commit messages
+
+Short imperative summary line (e.g. "Add nftables support to the firewall
+check", not "Added" or "Adding"), blank line, then the *why* if it's not
+obvious from the summary alone. Squash-merge is used for PRs, so
+intermediate "wip" / "fix typo" commits within a branch are fine — the PR
+title and description are what end up in `main`'s history.
