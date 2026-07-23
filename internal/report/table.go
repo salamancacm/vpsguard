@@ -30,7 +30,7 @@ func PrintTable(w io.Writer, findings []Finding) {
 	}
 
 	fmt.Fprintln(w)
-	fmt.Fprintf(w, "Resumen: %s  %s  %s\n",
+	fmt.Fprintf(w, "Summary: %s  %s  %s\n",
 		color.GreenString("%d OK", okC),
 		color.YellowString("%d WARN", warnC),
 		color.RedString("%d CRIT", critC),
