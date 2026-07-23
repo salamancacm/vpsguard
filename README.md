@@ -45,6 +45,11 @@ GOOS=linux GOARCH=arm64 go build -o vpsguard-linux-arm64 .
 
 ## Usage
 
+When run in an interactive terminal, `vpsguard` shows a small banner and
+prints each check's result as it runs instead of going quiet until the
+end. Piped, redirected, or `--json` output is always the same plain,
+stable format regardless — safe for scripts, cron, and CI.
+
 ### Audit (read-only)
 
 ```bash
