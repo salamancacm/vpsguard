@@ -59,6 +59,12 @@ func Diff(old, cur Snapshot) []report.Finding {
 		}
 	}
 
+	for _, name := range setDiff(toSet(old.RootProcesses), toSet(cur.RootProcesses)) {
+		findings = append(findings, report.NewFinding(check, report.WARN,
+			"new process running as root: "+name,
+			"this can also be a normal package upgrade or service restart — verify it's expected", false))
+	}
+
 	return findings
 }
 
