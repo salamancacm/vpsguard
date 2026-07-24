@@ -25,6 +25,12 @@ func Fail2ban(dryRun bool) ([]string, error) {
 		case "debian":
 			_, installErr = system.Run("apt-get", "install", "-y", "fail2ban")
 		case "rhel":
+			// fail2ban isn't in RHEL/Rocky/Alma's default repos — it's an
+			// EPEL package. Installing epel-release first is a no-op
+			// (exit 0) if EPEL is already enabled.
+			if _, err := system.Run("dnf", "install", "-y", "epel-release"); err != nil {
+				return nil, fmt.Errorf("installing epel-release (required for fail2ban on RHEL family): %w", err)
+			}
 			_, installErr = system.Run("dnf", "install", "-y", "fail2ban")
 		default:
 			return nil, fmt.Errorf("unrecognized distro, install fail2ban manually")

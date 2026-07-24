@@ -8,12 +8,18 @@ import (
 )
 
 // Firewall checks whether a firewall is installed, active, and defaulting
-// to deny. Supports ufw and nftables/iptables (whichever is present).
+// to deny. Supports ufw, firewalld, and raw nftables/iptables — checked
+// in that order, since a system can have more than one installed and
+// ufw/firewalld (the higher-level, distro-idiomatic managers) are what
+// actually matters if present.
 func Firewall() []report.Finding {
 	const check = "firewall"
 
 	if system.CommandExists("ufw") {
 		return ufwFindings(check)
+	}
+	if system.CommandExists("firewall-cmd") {
+		return firewalldFindings(check)
 	}
 	if system.CommandExists("nft") {
 		return nftFindings(check)
@@ -24,8 +30,8 @@ func Firewall() []report.Finding {
 
 	return []report.Finding{
 		report.NewFinding(check, report.CRIT,
-			"no firewall found (ufw/nftables/iptables)",
-			"install and enable ufw: 'apt install ufw && ufw default deny incoming && ufw enable'", true),
+			"no firewall found (ufw/firewalld/nftables/iptables)",
+			"install and enable one — 'apt install ufw && ufw enable' (Debian/Ubuntu) or 'dnf install firewalld && systemctl enable --now firewalld' (RHEL family)", true),
 	}
 }
 
@@ -54,6 +60,17 @@ func ufwFindings(check string) []report.Finding {
 	}
 
 	return findings
+}
+
+func firewalldFindings(check string) []report.Finding {
+	out, err := system.Run("firewall-cmd", "--state")
+	if err == nil && strings.TrimSpace(out) == "running" {
+		return []report.Finding{report.NewFinding(check, report.OK,
+			"firewalld is active", "", false)}
+	}
+	return []report.Finding{report.NewFinding(check, report.CRIT,
+		"firewalld is installed but not running",
+		"enable it with 'systemctl enable --now firewalld'", true)}
 }
 
 func nftFindings(check string) []report.Finding {
