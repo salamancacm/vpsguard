@@ -21,6 +21,21 @@ there before (a new user, a new SSH key, a new port, etc.).
 
 ## Installation
 
+### Install script
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/salamancacm/vpsguard/main/install.sh | sh
+```
+
+This detects your architecture, downloads the matching binary from the
+latest release, **verifies it against the published SHA-256 checksum**
+before installing (refuses to install on a mismatch), and puts it on your
+`PATH` (`/usr/local/bin` if run as root, `~/.local/bin` otherwise).
+
+Piping `curl` into `sh` is a trust-on-first-use tradeoff — you're running
+code from the network. If you'd rather not, read
+[`install.sh`](install.sh) first, or install from a binary by hand below.
+
 ### From a binary
 
 Download the binary for your architecture from
