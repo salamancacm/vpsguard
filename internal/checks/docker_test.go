@@ -64,3 +64,107 @@ tcp   LISTEN 0      128          0.0.0.0:22        0.0.0.0:*    users:(("sshd",p
 		})
 	}
 }
+
+func TestIsRootUser(t *testing.T) {
+	tests := []struct {
+		user string
+		want bool
+	}{
+		{"", true},
+		{"root", true},
+		{"0", true},
+		{"0:0", true},
+		{"app", false},
+		{"1000", false},
+		{"1000:1000", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.user, func(t *testing.T) {
+			if got := isRootUser(tt.user); got != tt.want {
+				t.Errorf("isRootUser(%q) = %v, want %v", tt.user, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestClassifyContainer(t *testing.T) {
+	tests := []struct {
+		name        string
+		inspectJSON string
+		wantSevs    []report.Severity
+	}{
+		{
+			name: "privileged root container publishing a database port",
+			inspectJSON: `[{
+				"Name": "/redis",
+				"Config": {"User": ""},
+				"HostConfig": {"Privileged": true},
+				"NetworkSettings": {"Ports": {"6379/tcp": [{"HostIp": "0.0.0.0", "HostPort": "6379"}]}}
+			}]`,
+			wantSevs: []report.Severity{report.CRIT, report.WARN, report.CRIT},
+		},
+		{
+			name: "non-root container publishing an ordinary port to localhost only",
+			inspectJSON: `[{
+				"Name": "/web",
+				"Config": {"User": "1000:1000"},
+				"HostConfig": {"Privileged": false},
+				"NetworkSettings": {"Ports": {"8080/tcp": [{"HostIp": "127.0.0.1", "HostPort": "8080"}]}}
+			}]`,
+			wantSevs: nil,
+		},
+		{
+			name: "root container publishing an ordinary port to all interfaces",
+			inspectJSON: `[{
+				"Name": "/web",
+				"Config": {"User": "root"},
+				"HostConfig": {"Privileged": false},
+				"NetworkSettings": {"Ports": {"8080/tcp": [{"HostIp": "0.0.0.0", "HostPort": "8080"}]}}
+			}]`,
+			wantSevs: []report.Severity{report.WARN, report.WARN},
+		},
+		{
+			name: "unpublished port (bound to nothing) produces no port finding",
+			inspectJSON: `[{
+				"Name": "/db",
+				"Config": {"User": "app"},
+				"HostConfig": {"Privileged": false},
+				"NetworkSettings": {"Ports": {"5432/tcp": null}}
+			}]`,
+			wantSevs: nil,
+		},
+		{
+			name: "same port bound to both IPv4 and IPv6 wildcard produces one finding, not two",
+			inspectJSON: `[{
+				"Name": "/web",
+				"Config": {"User": "app"},
+				"HostConfig": {"Privileged": false},
+				"NetworkSettings": {"Ports": {"80/tcp": [{"HostIp": "0.0.0.0", "HostPort": "8080"}, {"HostIp": "::", "HostPort": "8080"}]}}
+			}]`,
+			wantSevs: []report.Severity{report.WARN},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			containers, err := parseDockerInspect(tt.inspectJSON)
+			if err != nil {
+				t.Fatalf("parseDockerInspect: %v", err)
+			}
+			if len(containers) != 1 {
+				t.Fatalf("expected 1 container, got %d", len(containers))
+			}
+
+			findings := classifyContainer("docker", containers[0])
+			if len(findings) != len(tt.wantSevs) {
+				t.Fatalf("got %d findings, want %d (%+v)", len(findings), len(tt.wantSevs), findings)
+			}
+			for i, want := range tt.wantSevs {
+				if findings[i].Severity != want {
+					t.Errorf("finding %d severity = %v, want %v", i, findings[i].Severity, want)
+				}
+			}
+		})
+	}
+}
