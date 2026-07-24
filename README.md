@@ -138,6 +138,18 @@ sudo vpsguard install-cron
 Snapshots are stored at `/var/lib/vpsguard/snapshot.json` and the cron-driven
 `monitor` log goes to `/var/log/vpsguard-monitor.log`.
 
+### Updating
+
+```bash
+vpsguard update --check   # just report whether a newer release exists
+sudo vpsguard update      # download, verify, and install it
+```
+
+`update` never runs on its own — it's always an explicit command, same as
+`harden` requiring `--yes`/confirmation. It checks the checksum published
+alongside the release before replacing the running binary and refuses to
+install on a mismatch.
+
 ## Configuration
 
 An optional `/etc/vpsguard/config.yaml` (or `--config <path>` on `audit`,
