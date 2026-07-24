@@ -123,6 +123,24 @@ sudo vpsguard install-cron
 Snapshots are stored at `/var/lib/vpsguard/snapshot.json` and the cron-driven
 `monitor` log goes to `/var/log/vpsguard-monitor.log`.
 
+#### Notifications
+
+By default `monitor` only prints to stdout/the log file — nobody reads
+that proactively, so configure a webhook and/or email to actually get
+pinged when something changes. Create `/etc/vpsguard/config.yaml`:
+
+```yaml
+notify:
+  webhook_url: "https://hooks.slack.com/services/..." # Slack/Discord/Mattermost-compatible
+  email_to: "you@example.com"                          # requires sendmail or mailutils' `mail`
+  min_severity: "WARN"                                  # "WARN" (default) or "CRIT"
+```
+
+Both fields are optional and independent — set either, both, or neither.
+A broken webhook or missing mail transport prints a warning but never
+makes `monitor` itself fail. Use `--config <path>` to point at a
+different file.
+
 ## Audit checks
 
 | Check | What it checks |
