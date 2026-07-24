@@ -74,7 +74,13 @@ func listeningOnInsecureTCP() bool {
 	if err != nil {
 		return false
 	}
-	for _, line := range strings.Split(out, "\n") {
+	return hasInsecureTCPListener(out)
+}
+
+// hasInsecureTCPListener checks `ss -tulnp`-formatted output for anything
+// listening on port 2375.
+func hasInsecureTCPListener(ssOutput string) bool {
+	for _, line := range strings.Split(ssOutput, "\n") {
 		fields := strings.Fields(line)
 		if len(fields) < 5 {
 			continue

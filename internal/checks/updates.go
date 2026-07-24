@@ -25,14 +25,7 @@ func Updates() []report.Finding {
 
 func debianUpdateFindings(check string) []report.Finding {
 	confLines, ok := system.ReadFileLines("/etc/apt/apt.conf.d/20auto-upgrades")
-	enabled := false
-	if ok {
-		for _, l := range confLines {
-			if strings.Contains(l, `Unattended-Upgrade "1"`) {
-				enabled = true
-			}
-		}
-	}
+	enabled := ok && isAutoUpgradesEnabled(confLines)
 
 	if enabled {
 		return []report.Finding{report.NewFinding(check, report.OK,
@@ -41,6 +34,17 @@ func debianUpdateFindings(check string) []report.Finding {
 	return []report.Finding{report.NewFinding(check, report.WARN,
 		"unattended-upgrades is not enabled",
 		"install and configure with 'apt install unattended-upgrades && dpkg-reconfigure -plow unattended-upgrades'", true)}
+}
+
+// isAutoUpgradesEnabled reports whether /etc/apt/apt.conf.d/20auto-upgrades'
+// lines contain an active Unattended-Upgrade "1" directive.
+func isAutoUpgradesEnabled(confLines []string) bool {
+	for _, l := range confLines {
+		if strings.Contains(l, `Unattended-Upgrade "1"`) {
+			return true
+		}
+	}
+	return false
 }
 
 func rhelUpdateFindings(check string) []report.Finding {

@@ -22,6 +22,7 @@ jobs:
         run: |
           test -z "$(gofmt -l .)"
           go vet ./...
+          go test ./... -race
 
       - name: Build binaries
         env:

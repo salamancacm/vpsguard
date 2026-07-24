@@ -29,20 +29,7 @@ func checkUID0Accounts(check string) []report.Finding {
 			"could not read /etc/passwd", "", false)}
 	}
 
-	var extraRoot []string
-	for _, line := range lines {
-		fields := strings.Split(line, ":")
-		if len(fields) < 3 {
-			continue
-		}
-		uid, err := strconv.Atoi(fields[2])
-		if err != nil {
-			continue
-		}
-		if uid == 0 && fields[0] != "root" {
-			extraRoot = append(extraRoot, fields[0])
-		}
-	}
+	extraRoot := uid0AccountsBesidesRoot(lines)
 
 	if len(extraRoot) == 0 {
 		return []report.Finding{report.NewFinding(check, report.OK,
@@ -61,16 +48,7 @@ func checkEmptyPasswords(check string) []report.Finding {
 			"could not read /etc/shadow (did you run vpsguard without sudo/root?)", "", false)}
 	}
 
-	var empty []string
-	for _, line := range lines {
-		fields := strings.Split(line, ":")
-		if len(fields) < 2 {
-			continue
-		}
-		if fields[1] == "" {
-			empty = append(empty, fields[0])
-		}
-	}
+	empty := emptyPasswordAccounts(lines)
 
 	if len(empty) == 0 {
 		return []report.Finding{report.NewFinding(check, report.OK,
@@ -79,6 +57,42 @@ func checkEmptyPasswords(check string) []report.Finding {
 	return []report.Finding{report.NewFinding(check, report.CRIT,
 		"accounts with an empty password: "+strings.Join(empty, ", "),
 		"lock these accounts with 'passwd -l <user>' or assign them a password", false)}
+}
+
+// uid0AccountsBesidesRoot returns /etc/passwd account names with UID 0
+// other than "root" itself.
+func uid0AccountsBesidesRoot(passwdLines []string) []string {
+	var extraRoot []string
+	for _, line := range passwdLines {
+		fields := strings.Split(line, ":")
+		if len(fields) < 3 {
+			continue
+		}
+		uid, err := strconv.Atoi(fields[2])
+		if err != nil {
+			continue
+		}
+		if uid == 0 && fields[0] != "root" {
+			extraRoot = append(extraRoot, fields[0])
+		}
+	}
+	return extraRoot
+}
+
+// emptyPasswordAccounts returns /etc/shadow account names whose password
+// field is empty.
+func emptyPasswordAccounts(shadowLines []string) []string {
+	var empty []string
+	for _, line := range shadowLines {
+		fields := strings.Split(line, ":")
+		if len(fields) < 2 {
+			continue
+		}
+		if fields[1] == "" {
+			empty = append(empty, fields[0])
+		}
+	}
+	return empty
 }
 
 func checkSudoersD(check string) []report.Finding {
