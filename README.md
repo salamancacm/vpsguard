@@ -150,6 +150,34 @@ sudo vpsguard update      # download, verify, and install it
 alongside the release before replacing the running binary and refuses to
 install on a mismatch.
 
+### Fleet mode
+
+Audit several hosts at once over SSH, from one place:
+
+```bash
+sudo vpsguard fleet
+```
+
+List the targets under `hosts:` in the config file:
+
+```yaml
+hosts:
+  - name: web-1
+    addr: 203.0.113.10
+    user: root
+  - name: db-1
+    addr: 203.0.113.11
+    user: root
+    port: 2222 # optional, defaults to 22
+```
+
+`fleet` connects using your own SSH setup (keys, agent, `~/.ssh/config`) —
+vpsguard never handles credentials itself — and runs `vpsguard audit
+--json` on each host, in parallel (`--concurrency`, default 5). vpsguard
+must already be installed on every target host. An unreachable host is
+reported as an error for that host without failing the rest of the run.
+`--json` gives an array of `{host, addr, findings, error}` per host.
+
 ## Configuration
 
 An optional `/etc/vpsguard/config.yaml` (or `--config <path>` on `audit`,
@@ -183,6 +211,12 @@ notify:
   webhook_url: "https://hooks.slack.com/services/..."
   email_to: "you@example.com"
   min_severity: "WARN"
+
+# Targets for `vpsguard fleet` — see above.
+hosts:
+  - name: web-1
+    addr: 203.0.113.10
+    user: root
 ```
 
 ### Notifications

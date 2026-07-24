@@ -31,6 +31,22 @@ type Config struct {
 	AcceptedFindings []AcceptedFinding `yaml:"accepted_findings"`
 
 	Thresholds ThresholdsConfig `yaml:"thresholds"`
+
+	// Hosts configures `vpsguard fleet`'s remote targets. Empty means
+	// fleet mode has nothing to do — see cmd/fleet.go.
+	Hosts []HostConfig `yaml:"hosts"`
+}
+
+// HostConfig is one remote target for `vpsguard fleet`. Connecting relies
+// entirely on the operator's own SSH setup (keys, agent, ~/.ssh/config) —
+// vpsguard never handles credentials itself, same as how harden/checks
+// shell out to real tools instead of reimplementing their logic.
+type HostConfig struct {
+	Name string `yaml:"name"`
+	Addr string `yaml:"addr"`
+	User string `yaml:"user"`
+	// Port defaults to 22 when zero.
+	Port int `yaml:"port"`
 }
 
 // AcceptedFinding matches findings by check name and a substring of their
