@@ -18,6 +18,43 @@ const DefaultPath = "/etc/vpsguard/config.yaml"
 // Config is vpsguard's on-disk configuration.
 type Config struct {
 	Notify NotifyConfig `yaml:"notify"`
+
+	// DisabledChecks skips these checks entirely in `audit` and `harden` —
+	// equivalent to never passing them to --check.
+	DisabledChecks []string `yaml:"disabled_checks"`
+
+	// AcceptedFindings marks matching findings as acknowledged instead of
+	// hiding them: they still print (with an [ACK] tag) and still appear
+	// in --json (severity untouched, so automation never sees a lie about
+	// actual risk), but are excluded from the printed OK/WARN/CRIT tally
+	// so the summary reflects only what still needs a decision.
+	AcceptedFindings []AcceptedFinding `yaml:"accepted_findings"`
+
+	Thresholds ThresholdsConfig `yaml:"thresholds"`
+}
+
+// AcceptedFinding matches findings by check name and a substring of their
+// message — deliberately loose (not exact match) so small message wording
+// changes between vpsguard versions don't silently un-acknowledge
+// something an operator already reviewed.
+type AcceptedFinding struct {
+	Check           string `yaml:"check"`
+	MessageContains string `yaml:"message_contains"`
+}
+
+// ThresholdsConfig holds per-check numeric threshold overrides. Only
+// `kernel` has tunable thresholds today.
+type ThresholdsConfig struct {
+	Kernel KernelThresholds `yaml:"kernel"`
+}
+
+// KernelThresholds overrides internal/checks.SecurityUpdateWarnThreshold
+// and SecurityUpdateCritThreshold. Zero means "use the built-in default"
+// — there's no legitimate reason to set either to 0 pending updates as a
+// threshold, so this is unambiguous.
+type KernelThresholds struct {
+	SecurityUpdateWarn int `yaml:"security_update_warn"`
+	SecurityUpdateCrit int `yaml:"security_update_crit"`
 }
 
 // NotifyConfig configures where `vpsguard monitor` sends findings when it

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/salamancacm/vpsguard/internal/config"
 	"github.com/salamancacm/vpsguard/internal/harden"
 	"github.com/salamancacm/vpsguard/internal/report"
 	"github.com/salamancacm/vpsguard/internal/system"
@@ -16,6 +17,7 @@ var (
 	hardenDryRun      bool
 	hardenYes         bool
 	hardenCheckFilter string
+	hardenConfigPath  string
 )
 
 var hardenCmd = &cobra.Command{
@@ -28,10 +30,16 @@ var hardenCmd = &cobra.Command{
 			return fmt.Errorf("harden must run as root (use sudo), or pass --dry-run to see what it would do")
 		}
 
-		names := harden.Order
-		if hardenCheckFilter != "" {
-			names = strings.Split(hardenCheckFilter, ",")
+		cfg, err := config.Load(hardenConfigPath)
+		if err != nil {
+			return err
 		}
+
+		var requested []string
+		if hardenCheckFilter != "" {
+			requested = strings.Split(hardenCheckFilter, ",")
+		}
+		names := cfg.FilterDisabled(requested, harden.Order)
 
 		for _, name := range names {
 			fn, ok := harden.All[name]
@@ -78,5 +86,6 @@ func init() {
 	hardenCmd.Flags().BoolVar(&hardenDryRun, "dry-run", false, "show what would happen without changing anything")
 	hardenCmd.Flags().BoolVar(&hardenYes, "yes", false, "apply everything without asking for per-step confirmation")
 	hardenCmd.Flags().StringVar(&hardenCheckFilter, "check", "", "comma-separated list of checks to apply (e.g. ssh,firewall)")
+	hardenCmd.Flags().StringVar(&hardenConfigPath, "config", config.DefaultPath, "path to vpsguard's config file")
 	rootCmd.AddCommand(hardenCmd)
 }

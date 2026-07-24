@@ -18,21 +18,33 @@ func PrintTable(w io.Writer, findings []Finding) {
 	PrintSummary(w, findings)
 }
 
-// PrintFindings writes just the per-finding lines, no summary.
+// PrintFindings writes just the per-finding lines, no summary. Findings
+// marked Acknowledged (see internal/config.Config.MarkAccepted) get an
+// [ACK] tag — still visible, never silently hidden.
 func PrintFindings(w io.Writer, findings []Finding) {
 	for _, f := range findings {
 		badge := severityBadge(f.Severity)
-		fmt.Fprintf(w, "%s  [%s] %s\n", badge, f.Check, f.Message)
+		ack := ""
+		if f.Acknowledged {
+			ack = " " + color.HiBlackString("[ACK]")
+		}
+		fmt.Fprintf(w, "%s  [%s] %s%s\n", badge, f.Check, f.Message, ack)
 		if f.Severity != OK && f.Remediation != "" {
 			fmt.Fprintf(w, "        %s %s\n", color.HiBlackString("->"), f.Remediation)
 		}
 	}
 }
 
-// PrintSummary writes just the "N OK  N WARN  N CRIT" line.
+// PrintSummary writes just the "N OK  N WARN  N CRIT" line. Acknowledged
+// findings are excluded from the tally, so the summary reflects only what
+// still needs a decision — they're still visible in PrintFindings' output
+// and in --json, just not counted here.
 func PrintSummary(w io.Writer, findings []Finding) {
 	var okC, warnC, critC int
 	for _, f := range findings {
+		if f.Acknowledged {
+			continue
+		}
 		switch f.Severity {
 		case OK:
 			okC++
