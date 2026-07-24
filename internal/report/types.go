@@ -1,5 +1,7 @@
 package report
 
+import "encoding/json"
+
 // Severity indicates how urgent a Finding is.
 type Severity int
 
@@ -19,6 +21,20 @@ func (s Severity) String() string {
 		return "CRIT"
 	default:
 		return "UNKNOWN"
+	}
+}
+
+// severityFromString is String's inverse, used when reconstructing a
+// Finding from JSON (see Finding.UnmarshalJSON). Unrecognized strings
+// default to OK, same as the zero value.
+func severityFromString(s string) Severity {
+	switch s {
+	case "WARN":
+		return WARN
+	case "CRIT":
+		return CRIT
+	default:
+		return OK
 	}
 }
 
@@ -47,4 +63,22 @@ func NewFinding(check string, sev Severity, message, remediation string, fixable
 		Remediation: remediation,
 		Fixable:     fixable,
 	}
+}
+
+// UnmarshalJSON reconstructs Severity from SeverityStr. Severity itself is
+// tagged json:"-" (Go enums don't round-trip through JSON as human-
+// readable text on their own), so without this, unmarshaling a Finding
+// from another vpsguard process' --json output — e.g. internal/fleet
+// parsing a remote 'vpsguard audit --json' over SSH — would silently
+// leave every finding at Severity's zero value (OK), regardless of its
+// real severity.
+func (f *Finding) UnmarshalJSON(data []byte) error {
+	type alias Finding // avoid infinite recursion into this method
+	var a alias
+	if err := json.Unmarshal(data, &a); err != nil {
+		return err
+	}
+	*f = Finding(a)
+	f.Severity = severityFromString(f.SeverityStr)
+	return nil
 }
