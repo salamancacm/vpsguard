@@ -8,11 +8,13 @@ import (
 	"github.com/salamancacm/vpsguard/internal/system"
 )
 
-// securityUpdateWarnThreshold and securityUpdateCritThreshold bound how
+// SecurityUpdateWarnThreshold and SecurityUpdateCritThreshold bound how
 // many pending security updates escalate this from a nudge to urgent.
-const (
-	securityUpdateWarnThreshold = 1
-	securityUpdateCritThreshold = 10
+// Exported so cmd/audit.go can override them from
+// internal/config.ThresholdsConfig.Kernel before running checks.
+var (
+	SecurityUpdateWarnThreshold = 1
+	SecurityUpdateCritThreshold = 10
 )
 
 // Kernel checks whether the running kernel is stale (a newer one is
@@ -97,10 +99,10 @@ func rhelSecurityUpdateFinding(check string) report.Finding {
 func securityUpdateFinding(check string, count int) report.Finding {
 	countStr := strconv.Itoa(count) + " pending security update(s)"
 	switch {
-	case count >= securityUpdateCritThreshold:
+	case count >= SecurityUpdateCritThreshold:
 		return report.NewFinding(check, report.CRIT,
 			countStr, "apply them soon: 'apt upgrade' (or the dnf/yum equivalent)", false)
-	case count >= securityUpdateWarnThreshold:
+	case count >= SecurityUpdateWarnThreshold:
 		return report.NewFinding(check, report.WARN,
 			countStr, "apply them: 'apt upgrade' (or the dnf/yum equivalent)", false)
 	default:

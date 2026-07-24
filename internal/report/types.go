@@ -31,6 +31,10 @@ type Finding struct {
 	Remediation string   `json:"remediation,omitempty"`
 	// Fixable is true when internal/harden has a matching remediation function.
 	Fixable bool `json:"fixable"`
+	// Acknowledged is set by internal/config.Config.MarkAccepted when this
+	// finding matches an accepted_findings rule. Severity/Message are never
+	// altered by acknowledgment — only display/summary treatment changes.
+	Acknowledged bool `json:"acknowledged,omitempty"`
 }
 
 // NewFinding builds a Finding and keeps SeverityStr in sync for JSON output.

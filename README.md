@@ -123,23 +123,51 @@ sudo vpsguard install-cron
 Snapshots are stored at `/var/lib/vpsguard/snapshot.json` and the cron-driven
 `monitor` log goes to `/var/log/vpsguard-monitor.log`.
 
-#### Notifications
+## Configuration
 
-By default `monitor` only prints to stdout/the log file — nobody reads
-that proactively, so configure a webhook and/or email to actually get
-pinged when something changes. Create `/etc/vpsguard/config.yaml`:
+An optional `/etc/vpsguard/config.yaml` (or `--config <path>` on `audit`,
+`harden`, and `monitor`) tunes vpsguard's behavior. Every field is
+optional — an absent file, or an absent field within it, means "use the
+default," same as before this existed.
 
 ```yaml
+# Skip these checks entirely in audit and harden — same as never passing
+# them to --check.
+disabled_checks:
+  - network
+
+# Acknowledge a specific finding going forward. It still prints (with an
+# [ACK] tag) and still appears in --json with its real severity — nothing
+# is silently hidden — but it's excluded from the OK/WARN/CRIT summary
+# tally, so the summary reflects only what still needs a decision.
+accepted_findings:
+  - check: network
+    message_contains: "6379 (redis)" # substring match, not exact
+
+# Override a check's built-in thresholds. Only `kernel` has tunable
+# thresholds today.
+thresholds:
+  kernel:
+    security_update_warn: 5
+    security_update_crit: 20
+
+# Where `monitor` pushes findings when it detects a change — see below.
 notify:
-  webhook_url: "https://hooks.slack.com/services/..." # Slack/Discord/Mattermost-compatible
-  email_to: "you@example.com"                          # requires sendmail or mailutils' `mail`
-  min_severity: "WARN"                                  # "WARN" (default) or "CRIT"
+  webhook_url: "https://hooks.slack.com/services/..."
+  email_to: "you@example.com"
+  min_severity: "WARN"
 ```
 
-Both fields are optional and independent — set either, both, or neither.
-A broken webhook or missing mail transport prints a warning but never
-makes `monitor` itself fail. Use `--config <path>` to point at a
-different file.
+### Notifications
+
+By default `monitor` only prints to stdout/the log file — nobody reads
+that proactively, so configure `notify.webhook_url` and/or
+`notify.email_to` (above) to actually get pinged when something changes.
+`webhook_url` posts a Slack/Discord/Mattermost-compatible JSON payload;
+`email_to` requires `sendmail` or mailutils' `mail` to already be
+available. Both are optional and independent — set either, both, or
+neither. A broken webhook or missing mail transport prints a warning but
+never makes `monitor` itself fail.
 
 ## Audit checks
 
