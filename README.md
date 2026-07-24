@@ -65,6 +65,29 @@ GOOS=linux GOARCH=amd64 go build -o vpsguard-linux-amd64 .
 GOOS=linux GOARCH=arm64 go build -o vpsguard-linux-arm64 .
 ```
 
+### go install
+
+```bash
+go install github.com/salamancacm/vpsguard@latest
+```
+
+This builds from source for whatever platform you run it on. Since
+vpsguard only runs on Linux (it refuses to start otherwise — see
+`requireLinux()`), running this on a non-Linux machine gets you a binary
+you'd still need to cross-compile or transfer, not one you can use
+locally; run it directly on the target Linux host instead, or use
+`GOOS=linux GOARCH=amd64 go install ...` from elsewhere.
+
+### Homebrew (Linux only)
+
+```bash
+brew tap salamancacm/tap
+brew install vpsguard
+```
+
+Only works under Homebrew-on-Linux ("Linuxbrew") — the formula refuses to
+install on macOS, since the resulting binary couldn't run there anyway.
+
 ## Usage
 
 When run in an interactive terminal, `vpsguard` shows a small banner and
