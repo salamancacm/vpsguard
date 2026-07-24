@@ -114,7 +114,7 @@ sudo vpsguard audit --check=ssh,firewall
 ```
 
 Available checks: `ssh`, `firewall`, `fail2ban`, `users`, `sshkeys`,
-`cron`, `updates`, `network`, `docker`, `kernel`.
+`cron`, `updates`, `network`, `docker`, `kernel`, `cloud`.
 
 ### Hardening
 
@@ -139,7 +139,9 @@ sudo vpsguard harden --yes
 Every config file change is backed up before it's written
 (`file.bak.<timestamp>`). Checks with automatic remediation: `ssh`,
 `firewall`, `fail2ban`, `sshkeys`, `updates`. `users`, `cron`, `network`,
-`docker`, and `kernel` are audit-only — they require human judgement.
+`docker`, `kernel`, and `cloud` are audit-only — they require human
+judgement (`cloud` specifically requires changing an EC2 API setting from
+outside the instance, which vpsguard has no way to do from inside it).
 
 ### Continuous monitoring
 
@@ -267,6 +269,16 @@ never makes `monitor` itself fail.
 | `network` | listening TCP/UDP ports; flags non-standard ones, and CRITs on database ports (postgres/mysql/redis/mongo/elasticsearch) bound to all interfaces |
 | `docker` | Docker socket permissions, and an unauthenticated TCP daemon listener |
 | `kernel` | pending reboot for a newer kernel, count of pending security package updates |
+| `cloud` **(beta)** | on AWS EC2, whether the instance metadata service (IMDS) still accepts unauthenticated IMDSv1-style requests (the Capital One breach vector) — a no-op on anything that isn't AWS EC2 |
+
+Findings tagged **`[BETA]`** in the output come from a check that's real
+and tested, but hasn't been validated against the actual real-world
+system it targets (e.g. `cloud` has never run against a real AWS
+account — see [its tests](internal/checks/cloud_test.go) for what *has*
+been verified). Not a comment on code quality, just an honest nudge to
+double-check a beta finding yourself before acting on it. `--json` and
+`--check`/`disabled_checks` work on beta checks exactly like any other —
+nothing is hidden or excluded by default.
 
 ## Requirements
 

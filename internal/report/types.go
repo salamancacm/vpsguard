@@ -51,6 +51,13 @@ type Finding struct {
 	// finding matches an accepted_findings rule. Severity/Message are never
 	// altered by acknowledgment — only display/summary treatment changes.
 	Acknowledged bool `json:"acknowledged,omitempty"`
+	// Beta marks a check whose logic hasn't been validated against the
+	// real system/service it's meant to detect (e.g. no real AWS account
+	// to test cloud.go's IMDS check against) — only unit-tested and/or
+	// validated against the "not applicable" fallback path. Not a
+	// judgment on code quality, just an honest signal to weigh a CRIT/WARN
+	// from a beta check with a bit more skepticism than a battle-tested one.
+	Beta bool `json:"beta,omitempty"`
 }
 
 // NewFinding builds a Finding and keeps SeverityStr in sync for JSON output.
@@ -63,6 +70,15 @@ func NewFinding(check string, sev Severity, message, remediation string, fixable
 		Remediation: remediation,
 		Fixable:     fixable,
 	}
+}
+
+// NewBetaFinding is NewFinding for a check whose logic is real and tested
+// but hasn't been validated against the actual real-world system it
+// targets — see Finding.Beta.
+func NewBetaFinding(check string, sev Severity, message, remediation string, fixable bool) Finding {
+	f := NewFinding(check, sev, message, remediation, fixable)
+	f.Beta = true
+	return f
 }
 
 // UnmarshalJSON reconstructs Severity from SeverityStr. Severity itself is

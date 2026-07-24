@@ -20,15 +20,19 @@ func PrintTable(w io.Writer, findings []Finding) {
 
 // PrintFindings writes just the per-finding lines, no summary. Findings
 // marked Acknowledged (see internal/config.Config.MarkAccepted) get an
-// [ACK] tag — still visible, never silently hidden.
+// [ACK] tag, and findings from a Beta check get a [BETA] tag — both still
+// visible, never silently hidden.
 func PrintFindings(w io.Writer, findings []Finding) {
 	for _, f := range findings {
 		badge := severityBadge(f.Severity)
-		ack := ""
-		if f.Acknowledged {
-			ack = " " + color.HiBlackString("[ACK]")
+		tags := ""
+		if f.Beta {
+			tags += " " + color.HiBlackString("[BETA]")
 		}
-		fmt.Fprintf(w, "%s  [%s] %s%s\n", badge, f.Check, f.Message, ack)
+		if f.Acknowledged {
+			tags += " " + color.HiBlackString("[ACK]")
+		}
+		fmt.Fprintf(w, "%s  [%s] %s%s\n", badge, f.Check, f.Message, tags)
 		if f.Severity != OK && f.Remediation != "" {
 			fmt.Fprintf(w, "        %s %s\n", color.HiBlackString("->"), f.Remediation)
 		}
