@@ -18,10 +18,11 @@ var All = map[string]CheckFunc{
 	"network":  Network,
 	"docker":   Docker,
 	"kernel":   Kernel,
+	"cloud":    CloudMetadata,
 }
 
 // Order is the canonical, human-friendly ordering of check names.
-var Order = []string{"ssh", "firewall", "fail2ban", "users", "sshkeys", "cron", "updates", "network", "docker", "kernel"}
+var Order = []string{"ssh", "firewall", "fail2ban", "users", "sshkeys", "cron", "updates", "network", "docker", "kernel", "cloud"}
 
 // Run executes the given check names (or all of them if names is empty) and
 // returns the combined findings in canonical order.

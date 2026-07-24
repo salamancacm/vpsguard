@@ -114,7 +114,7 @@ sudo vpsguard audit --check=ssh,firewall
 ```
 
 Available checks: `ssh`, `firewall`, `fail2ban`, `users`, `sshkeys`,
-`cron`, `updates`, `network`, `docker`, `kernel`.
+`cron`, `updates`, `network`, `docker`, `kernel`, `cloud`.
 
 ### Hardening
 
@@ -139,7 +139,9 @@ sudo vpsguard harden --yes
 Every config file change is backed up before it's written
 (`file.bak.<timestamp>`). Checks with automatic remediation: `ssh`,
 `firewall`, `fail2ban`, `sshkeys`, `updates`. `users`, `cron`, `network`,
-`docker`, and `kernel` are audit-only — they require human judgement.
+`docker`, `kernel`, and `cloud` are audit-only — they require human
+judgement (`cloud` specifically requires changing an EC2 API setting from
+outside the instance, which vpsguard has no way to do from inside it).
 
 ### Continuous monitoring
 
@@ -267,6 +269,7 @@ never makes `monitor` itself fail.
 | `network` | listening TCP/UDP ports; flags non-standard ones, and CRITs on database ports (postgres/mysql/redis/mongo/elasticsearch) bound to all interfaces |
 | `docker` | Docker socket permissions, and an unauthenticated TCP daemon listener |
 | `kernel` | pending reboot for a newer kernel, count of pending security package updates |
+| `cloud` | on AWS EC2, whether the instance metadata service (IMDS) still accepts unauthenticated IMDSv1-style requests (the Capital One breach vector) — a no-op on anything that isn't AWS EC2 |
 
 ## Requirements
 
