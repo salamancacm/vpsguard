@@ -61,15 +61,7 @@ func debianSecurityUpdateFinding(check string) report.Finding {
 		return report.NewFinding(check, report.WARN,
 			"could not check for pending security updates ('apt list --upgradable' failed)", "", false)
 	}
-
-	count := 0
-	for _, line := range strings.Split(out, "\n") {
-		if strings.Contains(line, "-security") {
-			count++
-		}
-	}
-
-	return securityUpdateFinding(check, count)
+	return securityUpdateFinding(check, countDebianSecurityUpdates(out))
 }
 
 func rhelSecurityUpdateFinding(check string) report.Finding {
@@ -83,17 +75,33 @@ func rhelSecurityUpdateFinding(check string) report.Finding {
 		return report.NewFinding(check, report.WARN,
 			"could not check for pending security updates ('dnf updateinfo list security' failed)", "", false)
 	}
+	return securityUpdateFinding(check, countRHELSecurityUpdates(out))
+}
 
+// countDebianSecurityUpdates counts lines from `apt list --upgradable`
+// belonging to a "-security" pocket (e.g. "jammy-security").
+func countDebianSecurityUpdates(aptListOutput string) int {
 	count := 0
-	for _, line := range strings.Split(out, "\n") {
+	for _, line := range strings.Split(aptListOutput, "\n") {
+		if strings.Contains(line, "-security") {
+			count++
+		}
+	}
+	return count
+}
+
+// countRHELSecurityUpdates counts advisory lines from
+// `dnf updateinfo list security`, skipping its header lines.
+func countRHELSecurityUpdates(dnfOutput string) int {
+	count := 0
+	for _, line := range strings.Split(dnfOutput, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "Last metadata") || strings.HasPrefix(line, "Updates Information Summary") {
 			continue
 		}
 		count++
 	}
-
-	return securityUpdateFinding(check, count)
+	return count
 }
 
 func securityUpdateFinding(check string, count int) report.Finding {

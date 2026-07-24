@@ -22,14 +22,38 @@ cd vpsguard
 go build -o vpsguard .
 ```
 
-Format and vet before committing:
+Format, vet, and test before committing:
 
 ```bash
 gofmt -l .        # should print nothing
 go vet ./...
+go test ./...
 ```
 
 ## Testing changes
+
+### Unit tests
+
+Pure logic (parsing, threshold comparisons, string formatting — anything
+that doesn't need to shell out or touch the real filesystem) should have
+table-driven tests alongside it (`internal/checks/network_test.go` is a
+good template). If a check's logic is entangled with a `system.Run(...)`
+or `system.ReadFileLines(...)` call, prefer extracting the parsing/decision
+part into its own small function that takes the raw output/lines as a
+parameter — see `internal/checks/kernel.go`'s
+`countDebianSecurityUpdates`/`countRHELSecurityUpdates` for the pattern.
+This is what actually catches bugs: the `ss -tulnp` vs `ss -tln` column
+mismatch that shipped in `docker.go`'s first version would have been
+caught immediately by a test feeding it real captured `ss` output, which
+is exactly what `network_test.go` and `docker_test.go` now do.
+
+There's currently no general mocking layer for `system.Run` itself — full
+check-level unit tests (as opposed to their extracted pure helpers) still
+require a real container per below. A `Runner` interface to make that
+mockable is a reasonable follow-up if a check's logic gets complex enough
+to need it.
+
+### Container/integration testing
 
 vpsguard shells out to real system tools (`ufw`, `fail2ban-client`,
 `systemctl`, `ss`, `crontab`, ...) and reads/writes files like
@@ -91,9 +115,10 @@ GitHub release assets.
 
 - Keep PRs focused on one change.
 - Explain *why* the change is needed, not just what it does.
-- Make sure `gofmt -l .` and `go vet ./...` are clean.
+- Make sure `gofmt -l .`, `go vet ./...`, and `go test ./...` are clean.
 - If you touched a check or remediation, mention how you tested it (ideally
-  against a real container/VM, per above).
+  against a real container/VM, per above) — unit tests cover the parsing
+  logic, but they don't replace verifying the check against a real system.
 
 ### Branch naming
 
