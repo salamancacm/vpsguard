@@ -28,26 +28,33 @@ func CloudMetadata() []report.Finding {
 // cloudMetadataFinding is the testable core: given an HTTP client and
 // target URL, classify the response. Split out so tests can point it at a
 // local httptest.Server instead of the real metadata endpoint.
+//
+// Marked Beta (see report.Finding.Beta): the logic is real and covered by
+// cloud_test.go against a local server, and the "not AWS" fallback was
+// verified against a real non-AWS container, but it has never run against
+// an actual AWS EC2 instance — spinning up real, billed AWS infrastructure
+// just to test this was out of scope without separate explicit
+// authorization for that specific action.
 func cloudMetadataFinding(client *http.Client, url string) report.Finding {
 	const check = "cloud"
 
 	resp, err := client.Get(url)
 	if err != nil {
-		return report.NewFinding(check, report.OK,
+		return report.NewBetaFinding(check, report.OK,
 			"not running on AWS EC2 (or the instance metadata service is unreachable)", "", false)
 	}
 	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		return report.NewFinding(check, report.CRIT,
+		return report.NewBetaFinding(check, report.CRIT,
 			"AWS EC2 instance metadata service (IMDS) accepts unauthenticated requests — IMDSv1 is allowed",
 			"require IMDSv2 from a machine with AWS credentials: 'aws ec2 modify-instance-metadata-options --instance-id <id> --http-tokens required' (an EC2 API setting vpsguard can't change from inside the instance)", false)
 	case http.StatusUnauthorized:
-		return report.NewFinding(check, report.OK,
+		return report.NewBetaFinding(check, report.OK,
 			"AWS EC2 instance metadata service requires IMDSv2 (token-based) requests", "", false)
 	default:
-		return report.NewFinding(check, report.OK,
+		return report.NewBetaFinding(check, report.OK,
 			"not running on AWS EC2 (or the instance metadata service is unreachable)", "", false)
 	}
 }

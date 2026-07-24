@@ -60,6 +60,18 @@ func TestPrintFindings_AcknowledgedGetsACKTag(t *testing.T) {
 	}
 }
 
+func TestPrintFindings_BetaGetsBETATag(t *testing.T) {
+	f := NewBetaFinding("cloud", CRIT, "a beta finding", "", false)
+
+	var buf bytes.Buffer
+	PrintFindings(&buf, []Finding{f})
+	out := buf.String()
+
+	if !strings.Contains(out, "[BETA]") {
+		t.Errorf("PrintFindings() output for a beta finding missing [BETA] tag: %q", out)
+	}
+}
+
 func TestPrintFindings_NonAcknowledgedHasNoTag(t *testing.T) {
 	f := NewFinding("ssh", CRIT, "a normal finding", "", false)
 

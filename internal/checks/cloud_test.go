@@ -22,6 +22,9 @@ func TestCloudMetadataFinding_IMDSv1Accessible(t *testing.T) {
 	if got.Severity != report.CRIT {
 		t.Errorf("Severity = %v, want CRIT (IMDSv1 accessible unauthenticated)", got.Severity)
 	}
+	if !got.Beta {
+		t.Error("Beta = false, want true — this check has never run against real AWS")
+	}
 }
 
 func TestCloudMetadataFinding_IMDSv2Enforced(t *testing.T) {
