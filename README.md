@@ -1,5 +1,10 @@
 # vpsguard
 
+[![CI](https://github.com/salamancacm/vpsguard/actions/workflows/ci.yml/badge.svg)](https://github.com/salamancacm/vpsguard/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/salamancacm/vpsguard)](https://github.com/salamancacm/vpsguard/releases/latest)
+[![Go version](https://img.shields.io/github/go-mod/go-version/salamancacm/vpsguard)](go.mod)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A CLI to audit, harden, and monitor the security of a Linux VPS.
 
 `vpsguard` checks SSH configuration, firewall, fail2ban, user accounts,
@@ -11,6 +16,8 @@ there before (a new user, a new SSH key, a new port, etc.).
 > ⚠️ `vpsguard` modifies system configuration (`sshd_config`, firewall,
 > fail2ban, file permissions). Always run `--dry-run` first and review what
 > it would do before applying changes to a production server.
+
+![vpsguard audit, harden, and monitor catching a simulated SSH key intrusion](docs/demo.gif)
 
 ## Installation
 
