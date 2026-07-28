@@ -63,6 +63,21 @@ func PrintSummary(w io.Writer, findings []Finding) {
 		color.YellowString("%d WARN", warnC),
 		color.RedString("%d CRIT", critC),
 	)
+	fmt.Fprintf(w, "Score: %s\n", coloredScore(Score(findings)))
+}
+
+// coloredScore renders a "NN/100 (Label)" string colored the same way as
+// severityBadge, so the score reads as good/meh/bad at a glance.
+func coloredScore(score int) string {
+	text := fmt.Sprintf("%d/100 (%s)", score, ScoreLabel(score))
+	switch {
+	case score >= 90:
+		return color.GreenString(text)
+	case score >= 70:
+		return color.YellowString(text)
+	default:
+		return color.RedString(text)
+	}
 }
 
 // PrintCheckHeader announces which check is about to run. Interactive-mode
