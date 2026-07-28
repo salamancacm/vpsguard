@@ -79,6 +79,15 @@ func sendNotifications(findings []report.Finding) {
 	if cfg.Notify.WebhookURL != "" {
 		notifiers = append(notifiers, notify.NewWebhookNotifier(cfg.Notify.WebhookURL))
 	}
+	if cfg.Notify.SlackWebhookURL != "" {
+		notifiers = append(notifiers, notify.NewSlackNotifier(cfg.Notify.SlackWebhookURL))
+	}
+	if cfg.Notify.DiscordWebhookURL != "" {
+		notifiers = append(notifiers, notify.NewDiscordNotifier(cfg.Notify.DiscordWebhookURL))
+	}
+	if cfg.Notify.TelegramBotToken != "" && cfg.Notify.TelegramChatID != "" {
+		notifiers = append(notifiers, notify.NewTelegramNotifier(cfg.Notify.TelegramBotToken, cfg.Notify.TelegramChatID))
+	}
 	if cfg.Notify.EmailTo != "" {
 		notifiers = append(notifiers, notify.NewEmailNotifier(cfg.Notify.EmailTo))
 	}

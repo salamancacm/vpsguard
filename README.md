@@ -232,8 +232,13 @@ thresholds:
     security_update_crit: 20
 
 # Where `monitor` pushes findings when it detects a change — see below.
+# Set any combination of these; every one that's configured gets used.
 notify:
-  webhook_url: "https://hooks.slack.com/services/..."
+  webhook_url: "https://hooks.slack.com/services/..." # generic Slack/Discord/Mattermost-compatible payload
+  slack_webhook_url: "https://hooks.slack.com/services/..." # richer, color-coded Slack message
+  discord_webhook_url: "https://discord.com/api/webhooks/..." # richer, color-coded Discord embed
+  telegram_bot_token: "123456:AAExampleTokenTextGoesHere"
+  telegram_chat_id: "-1001234567890"
   email_to: "you@example.com"
   min_severity: "WARN"
 
@@ -247,13 +252,27 @@ hosts:
 ### Notifications
 
 By default `monitor` only prints to stdout/the log file — nobody reads
-that proactively, so configure `notify.webhook_url` and/or
-`notify.email_to` (above) to actually get pinged when something changes.
-`webhook_url` posts a Slack/Discord/Mattermost-compatible JSON payload;
-`email_to` requires `sendmail` or mailutils' `mail` to already be
-available. Both are optional and independent — set either, both, or
-neither. A broken webhook or missing mail transport prints a warning but
-never makes `monitor` itself fail.
+that proactively, so configure one or more of the `notify.*` settings
+(above) to actually get pinged when something changes. All of them are
+optional and independent — set any combination, and every one that's
+configured gets used:
+
+- `webhook_url` posts a flat JSON payload with both a `text` and `content`
+  field, which covers Slack, Discord, Mattermost, and most other
+  webhook-compatible chat tools with one setting.
+- `slack_webhook_url` / `discord_webhook_url` post to that platform's
+  native format instead — a colored Slack attachment or Discord embed
+  (red for CRIT, yellow/orange for WARN) — so a bad finding actually
+  stands out in the channel. Use these instead of `webhook_url` if you
+  want that, not in addition to it.
+- `telegram_bot_token` + `telegram_chat_id` send via a Telegram bot (see
+  [@BotFather](https://core.telegram.org/bots/tutorial) to create one and
+  get a chat ID). Both must be set together.
+- `email_to` requires `sendmail` or mailutils' `mail` to already be
+  available.
+
+A broken webhook, bad Telegram credentials, or missing mail transport
+prints a warning but never makes `monitor` itself fail.
 
 ## Audit checks
 

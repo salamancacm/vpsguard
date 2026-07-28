@@ -80,6 +80,19 @@ type KernelThresholds struct {
 type NotifyConfig struct {
 	WebhookURL string `yaml:"webhook_url"`
 	EmailTo    string `yaml:"email_to"`
+	// SlackWebhookURL and DiscordWebhookURL get their platform's native
+	// rich formatting (colored attachment/embed) instead of the plain-text
+	// payload WebhookURL sends -- set one of these instead of WebhookURL
+	// to get that, or use WebhookURL for any other Slack-compatible
+	// service (Mattermost, etc.) that only needs the flat "text" field.
+	SlackWebhookURL   string `yaml:"slack_webhook_url"`
+	DiscordWebhookURL string `yaml:"discord_webhook_url"`
+	// TelegramBotToken and TelegramChatID configure a Telegram notifier.
+	// Both must be set together -- Telegram has no generic webhook URL,
+	// it's always a bot token plus a target chat ID. See
+	// https://core.telegram.org/bots/api#sendmessage.
+	TelegramBotToken string `yaml:"telegram_bot_token"`
+	TelegramChatID   string `yaml:"telegram_chat_id"`
 	// MinSeverity is the lowest severity that triggers a notification:
 	// "WARN" (default) or "CRIT". Findings below this are still printed to
 	// stdout/--json as always, just not pushed out.

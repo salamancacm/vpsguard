@@ -23,6 +23,10 @@ func TestLoad_ParsesAllFields(t *testing.T) {
 	writeFile(t, path, `
 notify:
   webhook_url: "https://example.com/hook"
+  slack_webhook_url: "https://hooks.slack.com/services/xyz"
+  discord_webhook_url: "https://discord.com/api/webhooks/xyz"
+  telegram_bot_token: "123:ABC"
+  telegram_chat_id: "-100999"
   email_to: "ops@example.com"
   min_severity: "CRIT"
 disabled_checks:
@@ -47,6 +51,15 @@ thresholds:
 	}
 	if cfg.Notify.MinSeverity != "CRIT" {
 		t.Errorf("Notify.MinSeverity = %q", cfg.Notify.MinSeverity)
+	}
+	if cfg.Notify.SlackWebhookURL != "https://hooks.slack.com/services/xyz" {
+		t.Errorf("Notify.SlackWebhookURL = %q", cfg.Notify.SlackWebhookURL)
+	}
+	if cfg.Notify.DiscordWebhookURL != "https://discord.com/api/webhooks/xyz" {
+		t.Errorf("Notify.DiscordWebhookURL = %q", cfg.Notify.DiscordWebhookURL)
+	}
+	if cfg.Notify.TelegramBotToken != "123:ABC" || cfg.Notify.TelegramChatID != "-100999" {
+		t.Errorf("Notify.TelegramBotToken/TelegramChatID = %q/%q", cfg.Notify.TelegramBotToken, cfg.Notify.TelegramChatID)
 	}
 	if len(cfg.DisabledChecks) != 2 || cfg.DisabledChecks[0] != "network" {
 		t.Errorf("DisabledChecks = %v", cfg.DisabledChecks)
