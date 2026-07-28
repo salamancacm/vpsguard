@@ -38,6 +38,7 @@ func Docker() []report.Finding {
 	}
 
 	findings = append(findings, containerFindings(check)...)
+	findings = append(findings, dockerGroupFindings(check)...)
 
 	if len(findings) == 0 {
 		findings = append(findings, report.NewFinding(check, report.OK,
@@ -220,4 +221,47 @@ func isRootUser(user string) bool {
 	}
 	uidPart, _, _ := strings.Cut(user, ":")
 	return uidPart == "0"
+}
+
+// dockerGroupFindings flags every user in the 'docker' group besides root.
+// Membership is root-equivalent: the docker socket lets you bind-mount the
+// host filesystem into a container and read/write anything on it, so it's
+// effectively a second, unaudited sudoers list.
+func dockerGroupFindings(check string) []report.Finding {
+	lines, ok := system.ReadFileLines("/etc/group")
+	if !ok {
+		return nil
+	}
+
+	members := dockerGroupMembers(lines)
+	if len(members) == 0 {
+		return []report.Finding{report.NewFinding(check, report.OK,
+			"no users (besides root) are in the 'docker' group", "", false)}
+	}
+	return []report.Finding{report.NewFinding(check, report.WARN,
+		"users in the 'docker' group (root-equivalent access): "+strings.Join(members, ", "),
+		"membership in the 'docker' group grants root-equivalent access to the host (e.g. 'docker run -v /:/host ...'); verify each of these users needs it", false)}
+}
+
+// dockerGroupMembers parses /etc/group and returns the members of the
+// 'docker' group, excluding root (root already has unrestricted access, so
+// its membership isn't worth flagging).
+func dockerGroupMembers(groupLines []string) []string {
+	for _, line := range groupLines {
+		fields := strings.Split(line, ":")
+		if len(fields) < 4 || fields[0] != "docker" {
+			continue
+		}
+		if fields[3] == "" {
+			return nil
+		}
+		var members []string
+		for _, m := range strings.Split(fields[3], ",") {
+			if m != "" && m != "root" {
+				members = append(members, m)
+			}
+		}
+		return members
+	}
+	return nil
 }

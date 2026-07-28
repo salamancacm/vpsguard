@@ -88,6 +88,51 @@ func TestIsRootUser(t *testing.T) {
 	}
 }
 
+func TestDockerGroupMembers(t *testing.T) {
+	tests := []struct {
+		name  string
+		lines []string
+		want  []string
+	}{
+		{
+			name: "no docker group at all",
+			lines: []string{
+				"root:x:0:",
+				"sudo:x:27:carlos",
+			},
+			want: nil,
+		},
+		{
+			name: "docker group with no members",
+			lines: []string{
+				"docker:x:999:",
+			},
+			want: nil,
+		},
+		{
+			name: "docker group with members, root excluded",
+			lines: []string{
+				"docker:x:999:root,carlos,deploy",
+			},
+			want: []string{"carlos", "deploy"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := dockerGroupMembers(tt.lines)
+			if len(got) != len(tt.want) {
+				t.Fatalf("dockerGroupMembers(%v) = %v, want %v", tt.lines, got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("dockerGroupMembers(%v) = %v, want %v", tt.lines, got, tt.want)
+				}
+			}
+		})
+	}
+}
+
 func TestClassifyContainer(t *testing.T) {
 	tests := []struct {
 		name        string

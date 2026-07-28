@@ -267,7 +267,7 @@ never makes `monitor` itself fail.
 | `cron` | user crontabs and `/etc/cron.*` (informational) |
 | `updates` | automatic security updates active |
 | `network` | listening TCP/UDP ports; flags non-standard ones, and CRITs on database ports (postgres/mysql/redis/mongo/elasticsearch) bound to all interfaces |
-| `docker` | Docker socket permissions, an unauthenticated TCP daemon listener, and per-container issues: `--privileged`, running as root, and ports published to all interfaces (Docker's iptables rules bypass ufw/firewalld, so these aren't caught by the `firewall`/`network` checks) |
+| `docker` | Docker socket permissions, an unauthenticated TCP daemon listener, per-container issues (`--privileged`, running as root, ports published to all interfaces — Docker's iptables rules bypass ufw/firewalld, so these aren't caught by the `firewall`/`network` checks), and users in the `docker` group (root-equivalent access) |
 | `kernel` | pending reboot for a newer kernel, count of pending security package updates |
 | `cloud` **(beta)** | on AWS EC2, whether the instance metadata service (IMDS) still accepts unauthenticated IMDSv1-style requests (the Capital One breach vector) — a no-op on anything that isn't AWS EC2 |
 
