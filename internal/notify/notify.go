@@ -2,7 +2,12 @@
 // see them promptly, instead of only /var/log/vpsguard-monitor.log.
 package notify
 
-import "github.com/salamancacm/vpsguard/internal/report"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/salamancacm/vpsguard/internal/report"
+)
 
 // Notifier pushes findings out to some external destination. Errors are
 // meant to be logged, not fatal — a broken webhook must never make
@@ -44,4 +49,29 @@ func ParseMinSeverity(s string) report.Severity {
 	default:
 		return report.WARN
 	}
+}
+
+// maxSeverity returns the highest severity present in findings, OK if the
+// slice is empty. Used by the Slack/Discord notifiers to color the whole
+// message by its worst finding.
+func maxSeverity(findings []report.Finding) report.Severity {
+	max := report.OK
+	for _, f := range findings {
+		if severityRank(f.Severity) > severityRank(max) {
+			max = f.Severity
+		}
+	}
+	return max
+}
+
+// findingsList renders findings as a plain-text bulleted list, one per
+// line, for notifiers whose payload has a dedicated title field and only
+// needs the findings themselves in the body (unlike WebhookNotifier's
+// formatMessage, which also prepends its own count header).
+func findingsList(findings []report.Finding) string {
+	var b strings.Builder
+	for _, f := range findings {
+		fmt.Fprintf(&b, "[%s] [%s] %s\n", f.Severity, f.Check, f.Message)
+	}
+	return b.String()
 }
