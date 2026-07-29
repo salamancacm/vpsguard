@@ -95,6 +95,21 @@ prints each check's result as it runs instead of going quiet until the
 end. Piped, redirected, or `--json` output is always the same plain,
 stable format regardless — safe for scripts, cron, and CI.
 
+### Quick start
+
+```bash
+sudo vpsguard init
+```
+
+Walks through the usual first-run steps in one guided flow: runs `audit`,
+offers to walk through `harden` (same per-check confirmation as running
+it directly), offers to pin a `baseline`, and offers to install the
+`monitor` cron entry. Nothing happens without an explicit yes at each
+step — `init` doesn't skip any of the confirmations described below, it
+just walks you to them instead of you having to know to run four
+separate commands. Skip any step and run it by hand later; the sections
+below cover each one on its own.
+
 ### Audit (read-only)
 
 ```bash
