@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/salamancacm/vpsguard/internal/auditlog"
 	"github.com/salamancacm/vpsguard/internal/config"
 	"github.com/salamancacm/vpsguard/internal/notify"
 	"github.com/salamancacm/vpsguard/internal/report"
@@ -22,6 +23,8 @@ var monitorCmd = &cobra.Command{
 		"snapshot saved in " + snapshot.StoreDir + " and reports what changed.\n" +
 		"If a baseline was set with 'vpsguard baseline', watched critical binaries\n" +
 		"are also compared against it, not just the previous run.\n" +
+		"Every run appends a tamper-evident entry to " + auditlog.Path() + "\n" +
+		"— see 'vpsguard auditlog verify'.\n" +
 		"If " + config.DefaultPath + " configures a webhook_url or email_to,\n" +
 		"changes are also pushed out there — see the README's notifications section.",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -52,6 +55,10 @@ var monitorCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "warning: reading baseline: %v\n", err)
 		} else if hasBaseline {
 			findings = append(findings, snapshot.DiffBaseline(baseline, cur)...)
+		}
+
+		if _, err := auditlog.Append(findings); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: appending to audit log: %v\n", err)
 		}
 
 		if jsonOutput {

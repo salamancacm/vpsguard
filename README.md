@@ -181,6 +181,25 @@ subsequent run until it's fixed and `vpsguard baseline` is run again, not
 just once. Re-run it after `vpsguard harden`, `vpsguard update`, or any
 legitimate package upgrade that touches a watched binary.
 
+#### Audit log
+
+Every `monitor` run (after the first, which only seeds the initial
+snapshot) appends one entry to `/var/lib/vpsguard/audit.log` — a
+tamper-evident, append-only history of every run's findings. Each entry
+embeds the hash of the entry before it, so editing or deleting any past
+entry, including the most recent one, breaks the chain from that point
+on.
+
+```bash
+vpsguard auditlog verify
+```
+
+recomputes the chain from scratch and reports whether it's intact, or
+exactly where it breaks. This can't, by itself, catch an attacker with
+root replacing the entire log with a new, internally-consistent fake
+chain — for that, compare a run's reported hash against one you saved
+off-host from an earlier `auditlog verify`.
+
 ### Updating
 
 ```bash
