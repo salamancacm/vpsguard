@@ -77,6 +77,46 @@ func Diff(old, cur Snapshot) []report.Finding {
 	return findings
 }
 
+// DiffBaseline compares cur's watched-binary hashes against a pinned
+// baseline (see `vpsguard baseline`), instead of the previous monitor run.
+// Unlike Diff, this is scoped to watchedBinaries only: users/ports/
+// processes naturally drift during normal operation, so diffing those
+// against a fixed reference point (rather than the last run) would just be
+// noise. Binaries are different — they should rarely legitimately change,
+// and a baseline catches a swap that Diff alone would miss once it becomes
+// the new "previous run" (e.g. re-compromised right after every monitor
+// run, always looking unchanged one cycle later) or a swap that happened
+// between two runs that were never compared to each other.
+//
+// vpsguard's own executable is deliberately excluded even though it's
+// hashed into every snapshot's BinaryHashes — `vpsguard update` legitimately
+// changes it, and a pinned baseline has no way to distinguish that from
+// tampering.
+func DiffBaseline(baseline, cur Snapshot) []report.Finding {
+	const check = "monitor"
+	var findings []report.Finding
+
+	for _, path := range watchedBinaries {
+		baseHash, inBaseline := baseline.BinaryHashes[path]
+		if !inBaseline {
+			continue
+		}
+		curHash, exists := cur.BinaryHashes[path]
+		switch {
+		case !exists:
+			findings = append(findings, report.NewFinding(check, report.CRIT,
+				"critical binary missing since baseline was set: "+path,
+				"investigate immediately — this can also mean the package was legitimately removed", false))
+		case curHash != baseHash:
+			findings = append(findings, report.NewFinding(check, report.CRIT,
+				"critical binary differs from baseline: "+path,
+				"this can also be a normal package update — if expected, run 'vpsguard baseline' again to update the trusted reference", false))
+		}
+	}
+
+	return findings
+}
+
 func toSet(items []string) map[string]bool {
 	set := make(map[string]bool, len(items))
 	for _, i := range items {

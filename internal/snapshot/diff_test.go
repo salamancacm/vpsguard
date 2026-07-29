@@ -110,6 +110,60 @@ func TestDiff_RemovedAuthorizedKeysIsWARN(t *testing.T) {
 	assertHasFinding(t, findings, report.WARN, "user 'deploy' no longer has authorized_keys")
 }
 
+func TestDiffBaseline_UnchangedBinaryIsNotFlagged(t *testing.T) {
+	baseline := Snapshot{BinaryHashes: map[string]string{"/bin/su": "aaaa"}}
+	cur := Snapshot{BinaryHashes: map[string]string{"/bin/su": "aaaa"}}
+
+	findings := DiffBaseline(baseline, cur)
+	if len(findings) != 0 {
+		t.Errorf("DiffBaseline(unchanged) = %+v, want no findings", findings)
+	}
+}
+
+func TestDiffBaseline_ChangedWatchedBinaryIsCRIT(t *testing.T) {
+	baseline := Snapshot{BinaryHashes: map[string]string{"/bin/su": "aaaa"}}
+	cur := Snapshot{BinaryHashes: map[string]string{"/bin/su": "bbbb"}}
+
+	findings := DiffBaseline(baseline, cur)
+	assertHasFinding(t, findings, report.CRIT, "critical binary differs from baseline: /bin/su")
+}
+
+func TestDiffBaseline_MissingWatchedBinaryIsCRIT(t *testing.T) {
+	baseline := Snapshot{BinaryHashes: map[string]string{"/bin/su": "aaaa"}}
+	cur := Snapshot{BinaryHashes: map[string]string{}}
+
+	findings := DiffBaseline(baseline, cur)
+	assertHasFinding(t, findings, report.CRIT, "critical binary missing since baseline was set: /bin/su")
+}
+
+func TestDiffBaseline_UnwatchedPathIsIgnored(t *testing.T) {
+	// A path that's in the baseline's map (e.g. vpsguard's own executable
+	// at baseline time) but isn't one of the watched binaries must never
+	// be flagged, even if it changes -- `vpsguard update` legitimately
+	// changes vpsguard's own binary.
+	baseline := Snapshot{BinaryHashes: map[string]string{"/usr/local/bin/vpsguard": "aaaa"}}
+	cur := Snapshot{BinaryHashes: map[string]string{"/usr/local/bin/vpsguard": "bbbb"}}
+
+	findings := DiffBaseline(baseline, cur)
+	if len(findings) != 0 {
+		t.Errorf("DiffBaseline(unwatched path changed) = %+v, want no findings", findings)
+	}
+}
+
+func TestDiffBaseline_NoBaselineForPathIsNotFlagged(t *testing.T) {
+	// A watched binary that simply wasn't present when the baseline was
+	// taken (e.g. sshd wasn't installed yet) shouldn't be treated as
+	// "missing" once it does show up, or vice versa -- there's nothing to
+	// compare it against.
+	baseline := Snapshot{BinaryHashes: map[string]string{}}
+	cur := Snapshot{BinaryHashes: map[string]string{"/usr/sbin/sshd": "aaaa"}}
+
+	findings := DiffBaseline(baseline, cur)
+	if len(findings) != 0 {
+		t.Errorf("DiffBaseline(no baseline entry) = %+v, want no findings", findings)
+	}
+}
+
 func assertHasFinding(t *testing.T, findings []report.Finding, sev report.Severity, messageContains string) {
 	t.Helper()
 	for _, f := range findings {
