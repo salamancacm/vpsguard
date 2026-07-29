@@ -20,6 +20,8 @@ var monitorCmd = &cobra.Command{
 	Long: "Meant to run periodically via cron (see 'vpsguard install-cron').\n" +
 		"Each run compares users, SSH keys, cron, and ports against the previous\n" +
 		"snapshot saved in " + snapshot.StoreDir + " and reports what changed.\n" +
+		"If a baseline was set with 'vpsguard baseline', watched critical binaries\n" +
+		"are also compared against it, not just the previous run.\n" +
 		"If " + config.DefaultPath + " configures a webhook_url or email_to,\n" +
 		"changes are also pushed out there — see the README's notifications section.",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -44,6 +46,13 @@ var monitorCmd = &cobra.Command{
 		}
 
 		findings := snapshot.Diff(old, cur)
+
+		baseline, hasBaseline, err := snapshot.LoadBaseline()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "warning: reading baseline: %v\n", err)
+		} else if hasBaseline {
+			findings = append(findings, snapshot.DiffBaseline(baseline, cur)...)
+		}
 
 		if jsonOutput {
 			if err := report.PrintJSON(os.Stdout, findings); err != nil {

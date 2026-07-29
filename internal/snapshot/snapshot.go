@@ -214,6 +214,22 @@ func captureBinaryHashes() map[string]string {
 	return hashes
 }
 
+// WatchedBinaryCount returns how many of the watched critical binaries were
+// actually found (and hashed) in this snapshot. Used to report a
+// meaningful count from `vpsguard baseline` without exposing the exact
+// list from outside the package, and without including vpsguard's own
+// executable — it's hashed into every snapshot too, but isn't part of the
+// watched set DiffBaseline checks.
+func WatchedBinaryCount(s Snapshot) int {
+	n := 0
+	for _, path := range watchedBinaries {
+		if _, ok := s.BinaryHashes[path]; ok {
+			n++
+		}
+	}
+	return n
+}
+
 func sha256File(path string) (string, bool) {
 	f, err := os.Open(path)
 	if err != nil {

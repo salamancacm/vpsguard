@@ -163,6 +163,24 @@ sudo vpsguard install-cron
 Snapshots are stored at `/var/lib/vpsguard/snapshot.json` and the cron-driven
 `monitor` log goes to `/var/log/vpsguard-monitor.log`.
 
+#### Pinning a binary baseline
+
+Comparing against only the previous run has a blind spot: a binary
+swapped back and forth between two `monitor` runs, or re-compromised
+right after every check, can look unchanged forever once the tampered
+hash becomes the new "previous run".
+
+```bash
+sudo vpsguard baseline
+```
+
+pins the current hashes of the watched critical binaries (sshd, sudo,
+su, ssh) as a fixed, trusted reference. Once set, every `monitor` run
+also compares against it — and keeps flagging a mismatch on every
+subsequent run until it's fixed and `vpsguard baseline` is run again, not
+just once. Re-run it after `vpsguard harden`, `vpsguard update`, or any
+legitimate package upgrade that touches a watched binary.
+
 ### Updating
 
 ```bash
