@@ -37,6 +37,20 @@ jobs:
               -o "dist/vpsguard-linux-$arch" .
           done
 
+      - name: Install nfpm
+        run: |
+          NFPM_VERSION=$(curl -sSfL https://api.github.com/repos/goreleaser/nfpm/releases/latest | grep '"tag_name"' | head -1 | cut -d '"' -f4 | sed 's/^v//')
+          curl -sSfL -o nfpm.deb "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_amd64.deb"
+          sudo dpkg -i nfpm.deb
+
+      - name: Build .deb/.rpm packages
+        run: |
+          for arch in amd64 arm64; do
+            for pkg in deb rpm; do
+              VERSION="${GITHUB_REF_NAME#v}" ARCH="$arch" nfpm package --config nfpm.yaml --packager "$pkg" --target dist/
+            done
+          done
+
       - name: Checksums
         working-directory: dist
         run: sha256sum * > checksums.txt

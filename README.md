@@ -88,6 +88,29 @@ brew install vpsguard
 Only works under Homebrew-on-Linux ("Linuxbrew") — the formula refuses to
 install on macOS, since the resulting binary couldn't run there anyway.
 
+### APT / RPM
+
+Every release also publishes `.deb` and `.rpm` packages for `amd64` and
+`arm64`, built with [nfpm](https://nfpm.goreleaser.com) (config:
+[`nfpm.yaml`](nfpm.yaml)). Download the one matching your distro from
+[Releases](../../releases) and install it directly:
+
+```bash
+# Debian / Ubuntu
+curl -Lo vpsguard.deb https://github.com/salamancacm/vpsguard/releases/latest/download/vpsguard_<version>_amd64.deb
+sudo apt install ./vpsguard.deb
+
+# RHEL / Fedora / Rocky / AlmaLinux
+curl -Lo vpsguard.rpm https://github.com/salamancacm/vpsguard/releases/latest/download/vpsguard-<version>-1.x86_64.rpm
+sudo dnf install ./vpsguard.rpm
+```
+
+(Replace `<version>` with the actual release version shown on the
+[Releases](../../releases) page — GitHub doesn't support wildcards in
+`/latest/download/` URLs.) Both packages just drop the binary at
+`/usr/bin/vpsguard`; there's no service, config, or post-install step to
+worry about.
+
 ## Usage
 
 When run in an interactive terminal, `vpsguard` shows a small banner and
