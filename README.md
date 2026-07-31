@@ -255,6 +255,33 @@ must already be installed on every target host. An unreachable host is
 reported as an error for that host without failing the rest of the run.
 `--json` gives an array of `{host, addr, findings, error}` per host.
 
+### Docker image
+
+An official image is published to GHCR on every release, for running
+`audit`/`fleet` from CI without installing the binary on the runner
+(the [GitHub Action](https://github.com/marketplace/actions/vps-fleet-audit-vpsguard)
+wraps this same image):
+
+```bash
+docker run --rm ghcr.io/salamancacm/vpsguard:latest --help
+docker run --rm --privileged ghcr.io/salamancacm/vpsguard:latest audit
+```
+
+It's a static binary on Alpine with `openssh-client` and
+`ca-certificates` added, so `fleet` works out of the box — mount your
+SSH key and config the same way you would for any other containerized
+SSH client:
+
+```bash
+docker run --rm \
+  -v ~/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro \
+  -v ./vpsguard-config.yaml:/etc/vpsguard/config.yaml:ro \
+  ghcr.io/salamancacm/vpsguard:latest fleet
+```
+
+Pin a specific version instead of `:latest` with the release tag, e.g.
+`ghcr.io/salamancacm/vpsguard:v0.5.0`.
+
 ## Configuration
 
 An optional `/etc/vpsguard/config.yaml` (or `--config <path>` on `audit`,
