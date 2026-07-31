@@ -1,0 +1,26 @@
+# nfpm config for the .deb/.rpm packages built in .github/workflows/release.yml.
+# ARCH and VERSION are set by that workflow's environment before each
+# `nfpm package` invocation (one per arch/format combination).
+name: vpsguard
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+section: admin
+priority: optional
+maintainer: Carlos Salamanca <salamancacmcol@gmail.com>
+description: |
+  Audits, hardens, and monitors the security of a Linux VPS.
+  A single static binary with no runtime dependencies: audits SSH config,
+  firewall, fail2ban, accounts, SSH keys, cron, updates, listening ports,
+  Docker, and kernel patch level; can apply safe automatic remediations;
+  and can watch the server over time for suspicious changes.
+vendor: vpsguard
+homepage: https://github.com/salamancacm/vpsguard
+license: MIT
+
+contents:
+  - src: ./dist/vpsguard-linux-${ARCH}
+    dst: /usr/bin/vpsguard
+    expand: true
+    file_info:
+      mode: 0755
